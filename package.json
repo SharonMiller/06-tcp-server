@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/SharonMiller/06-tcp-server#readme",
   "dependencies": {
+    "jest": "^23.6.0",
     "uuid": "^3.3.2"
   }
 }
