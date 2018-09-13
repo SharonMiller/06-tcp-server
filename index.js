@@ -1,3 +1,8 @@
+//moduels: startserver, User with constructor, socketpool, events, parseBuffer
+//modules for commands  under actions, a module for each command
+//server listeners would go in app.js along with startserver, dispatch action, handle connection, server.on
+//use requireDir() node helper to require directires
+
 'use strict';
 const COMMAND_SYMBOL = '@';
 const EventEmitter = require('events');
@@ -13,51 +18,53 @@ const events = new EventEmitter();
 const userPool = {};
 
 let User = function (socket) {
-  let id = uuid();
+  let id = uuid(); // QUESTION: I am getting confused with ID and how it is passed- sometimes user.id
   this.id = id;
   this.nickname = `User-${id}`;
-  this.socket = socket;
+  this.socket = socket; 
 };
 
 // console.log();
 
 server.on('connection', (socket) => {
   let user = new User(socket);
-  userPool[user.id] = user;
+  userPool[user.id] = user; //QUESTION: is this a different user only in this code block???
 
   console.log('above event listener');
   socket.on('data', (buffer) => {
-    dispatchAction(user.nickname, buffer);
-  });
+    dispatchAction(user, buffer);
+  });//this would go in app.js
 });
 
-let dispatchAction = (userId, buffer) => {
+let dispatchAction = (user, buffer) => {
   let message = parse(buffer);
-  events.emit(message.command, userId, message);  
+  events.emit(message.command, user.id, message);  
   console.log(message);
-};
+}; //this would go in app.js
 
-events.on('@all', (sender, message) => {
-  for (let userId in userPool) { //this is a different userId - look up for in loop
+events.on('@all', (senderId, message) => {
+  for (let userId in userPool) { //this is a different userId - The for/in statement loops through the properties of an object. The block of code inside the loop will be executed once for each property.
     let user = userPool[userId];
-    user.socket.write(`<${sender}>: ${message.payload}\n`);
-  }
+    user.socket.write(`<${senderId}>: ${message.payload}\n`);
+  } 
 });
 //code for on event listener for @list command 
-events.on('@list', (sender, message) => { //why is message not ued
-  let user = userPool[sender];
+events.on('@list', (senderId) => { //why is message not uuid
+  let user = userPool[senderId];
+  // console.log(sender);
+  console.log(user);
   for (let userId in userPool) {
-    // console.log(userPool);
-    user.socket.write(`<${userPool[userId]}>\n`);
+    user.socket.write(`<${userPool[userId].nickname}>\n`);
   }
 });
 
 //change name to nickname with @nickname <new-name>
-events.on('@nickname', (sender, message) => {
-  let user = userPool[sender];
+events.on('@nickname', (senderId, message) => {
+  let user = userPool[senderId];
   console.log('my nickname:', message.payload);
+  console.log(userPool[senderId]);
   user.nickname = message.payload;
-  console.log(user.nickname);
+  // console.log(user.nickname);
   user.socket.write(`<Your new username is ${user.nickname}>.\n`);
 });
 
